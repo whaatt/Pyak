@@ -1,8 +1,8 @@
 # File: __init__.py
 # Module Import File
 
-import yak
-import yakker
-import location.Location
-import peekLocation.PeekLocation
-import comment.Comment
+from pyak.yak import Yak
+from pyak.yakker import Yakker
+from pyak.location import Location
+from pyak.peekLocation import PeekLocation
+from pyak.comment import Comment

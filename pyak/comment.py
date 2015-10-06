@@ -1,48 +1,57 @@
-"""comment.py - Describes the comment model of the API"""
+# File: comment.py
+# Yak Comment Model
 
+import time
+def parseTime(timeStr):
+  format = '%Y-%m-%d %H:%M:%S'
+  return time.mktime(time.strptime(timeStr, format))
 
 class Comment:
+  def __init__(self, raw, messageID, client):
+    self.client = client
+    self.messageID = messageID
+    self.commentID = raw['commentID']
+    self.comment = raw['comment']
+    self.time = parseTime(raw['time'])
+    self.likes = int(raw['numberOfLikes'])
+    self.posterID = raw['posterID']
+    self.liked = int(raw['liked'])
 
-    def __init__(self, raw, message_id, client):
-        self.client = client
-        self.message_id = message_id
-        self.comment_id = raw["commentID"]
-        self.comment = raw["comment"]
-        self.time = parse_time(raw["time"])
-        self.likes = int(raw["numberOfLikes"])
-        self.poster_id = raw["posterID"]
-        self.liked = int(raw["liked"])
-
-        self.message_id = self.message_id.replace('\\', '')
+    # strip any backslashes that have popped up
+    self.messageID = self.messageID.replace('\\', '')
 
     def upvote(self):
-        if self.liked == 0:
-            self.likes += 1
-            self.liked += 1
-            return self.client.upvote_comment(self.comment_id)
+      if self.liked == 0:
+        self.likes += 1
+        self.liked += 1
+
+        # only triggers if not already voted on
+        return self.client.upvoteComment(self.commentID)
 
     def downvote(self):
-        if self.liked == 0:
-            self.likes -= 1
-            self.liked += 1
-            return self.client.downvote_comment(self.comment_id)
+      if self.liked == 0:
+        self.likes -= 1
+        self.liked += 1
+
+        # only triggers if not already voted on
+        return self.client.downvoteComment(self.commentID)
 
     def report(self):
-        return self.client.report_comment(self.comment_id, self.message_id)
+      return self.client.reportComment(self.commentID, self.messageID)
 
     def delete(self):
-        if self.poster_id == self.client.id:
-            return self.client.delete_comment(self.comment_id, self.message_id)
+      if self.posterID == self.client.ID:
+        return self.client.deleteComment(self.commentID, self.messageID)
 
     def reply(self, comment):
-        return self.client.post_comment(self.message_id, comment)
+      return self.client.postComment(self.messageID, comment)
 
-    def print_comment(self):
-        my_action = ""
-        if self.liked > 0:
-            my_action = "^"
-        elif self.liked < 0:
-            my_action = "v"
-        print "%s(%s) %s" % (my_action, self.likes, self.comment)
+    def printComment(self):
+      myAction = ''
+      if self.liked > 0:
+        myAction = '+'
+      elif self.liked < 0:
+        myAction = '-'
 
-
+      # looks like + (123) Comment goes here.
+      print('%s (%s) %s' % (myAction, self.likes, self.comment))

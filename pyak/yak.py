@@ -1,72 +1,60 @@
-"""yak.py - Describes the yak model of the API"""
+# File: yak.py
+# Yak Message Model
 
-
-import base64
-import hmac
-import json
-import os
-import requests
 import time
-import urllib
-from decimal import Decimal
-from hashlib import sha1, md5
-from random import randrange
-
-
-def parse_time(timestr):
-    format = "%Y-%m-%d %H:%M:%S"
-    return time.mktime(time.strptime(timestr, format))
-
+def parseTime(timeStr):
+  format = '%Y-%m-%d %H:%M:%S'
+  return time.mktime(time.strptime(timeStr, format))
 
 class Yak:
+  def __init__(self, raw, client):
+    self.client = client
+    self.posterID = raw["posterID"]
+    self.hidePin = bool(int(raw["hidePin"]))
+    self.messageID = raw["messageID"]
+    self.deliveryID = raw["deliveryID"]
+    self.longitude = raw["longitude"]
+    self.comments = int(raw["comments"])
+    self.time = parseTime(raw["time"])
+    self.latitude = raw["latitude"]
+    self.likes = int(raw["numberOfLikes"])
+    self.message = raw["message"]
+    self.type = raw["type"]
+    self.liked = int(raw["liked"])
+    self.reyaked = raw["reyaked"]
 
-    def __init__(self, raw, client):
-        self.client = client
-        self.poster_id = raw["posterID"]
-        self.hide_pin = bool(int(raw["hidePin"]))
-        self.message_id = raw["messageID"]
-        self.delivery_id = raw["deliveryID"]
-        self.longitude = raw["longitude"]
-        self.comments = int(raw["comments"])
-        self.time = parse_time(raw["time"])
-        self.latitude = raw["latitude"]
-        self.likes = int(raw["numberOfLikes"])
-        self.message = raw["message"]
-        self.type = raw["type"]
-        self.liked = int(raw["liked"])
-        self.reyaked = raw["reyaked"]
+    # yaks do not always have a handle
+    try: self.handle = raw["handle"]
+    except KeyError: self.handle = None
 
-        # Yaks don't always have a handle
-        try:
-            self.handle = raw["handle"]
-        except KeyError:
-            self.handle = None
-
-        # For some reason this seems necessary
-        self.message_id = self.message_id.replace('\\', '')
+    # for some reason this seems necessary
+    self.messageID = self.messageID.replace('\\', '')
 
     def upvote(self):
-        if self.liked == 0:
-            self.liked += 1
-            self.likes += 1
-            return self.client.upvote_yak(self.message_id)
+      if self.liked == 0:
+        self.liked += 1
+        self.likes += 1
+
+        # only triggers if not already voted on
+        return self.client.upvoteYak(self.messageID)
 
     def downvote(self):
-        if self.liked == 0:
-            self.liked -= 1
-            self.likes -= 1
-            return self.client.downvote_yak(self.message_id)
+      if self.liked == 0:
+        self.liked -= 1
+        self.likes -= 1
+
+        # only triggers if not already voted on
+        return self.client.downvoteYak(self.messageID)
 
     def report(self):
-        return self.client.report_yak(self.message_id)
+      return self.client.reportYak(self.messageID)
 
     def delete(self):
-        if self.poster_id == self.client.id:
-            return self.client.delete_yak(self.message_id)
+      if self.posterID == self.client.ID:
+        return self.client.deleteYak(self.messageID)
 
-    def add_comment(self, comment):
-        return self.client.post_comment(self.message_id, comment)
+    def addComment(self, comment):
+      return self.client.postComment(self.messageID, comment)
 
-    def get_comments(self):
-        return self.client.get_comments(self.message_id)
-
+    def getComments(self):
+      return self.client.getComments(self.messageID)

@@ -1,354 +1,404 @@
+# File: yakker.py
+# Yak User Model
+
 import base64
 import hmac
 import json
 import os
 import requests
 import time
-import urllib
+
 from decimal import Decimal
 from hashlib import sha1, md5
 from random import randrange
 
+# import the Pyak helper classes
+from pyak.peekLocation import PeekLocation
+from pyak.location import Location
+from pyak.comment import Comment
+from pyak.yak import Yak
 
 class Yakker:
-    base_url = "https://us-east-api.yikyakapi.net/api/"
-    user_agent = "Dalvik/1.6.0 (Linux; U; Android 4.4.4; XT1060 Build/KXA21.12-L1.26)"
-    cookie = None
+  baseURL = 'https://us-east-api.yikyakapi.net/api/' # until they change it...
+  userAgent = 'Dalvik/1.6.0 (Linux; U; AndroID 4.4.4; XT1060 Build/KXA21.12-L1.26)'
 
-    def __init__(self, user_id=None, location=None, force_register=False):
-        if location is None:
-            location = Location('0', '0')
-        self.update_location(location)
+  # ideally specify a userID most of the time so we do not spam Yik Yak
+  def __init__(self, userID = None, location = None, forceRegister = False):
+    if location is None:
+      location = Location('0', '0')
+    self.updateLocation(location)
 
-        if user_id is None:
-            user_id = self.gen_id()
-            self.register_id_new(user_id)
-        elif force_register:
-            self.register_id_new(user_id)
+    if userID is None:
+      userID = self.generateID()
+      self.registerNewID(userID)
+    elif forceRegister:
+      self.registerNewID(userID)
 
-        self.id = user_id
+    self.ID = userID
+    self.handle = None
 
-        self.handle = None
+  def generateID(self):
+    return md5(os.urandom(128)).hexdigest().upper()
 
-        #self.update_stats()
+  def registerNewID(self, ID):
+    params = {
+      'userID': ID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
 
-    def gen_id(self):
-        return md5(os.urandom(128)).hexdigest().upper()
+    result = self.get('registerUser', params)
+    return result
 
-    def register_id_new(self, id):
-        params = {
-            "userID": id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        result = self.get("registerUser", params)
-        return result
+  def signRequest(self, page, params):
+    key = 'EF64523D2BD1FA21F18F5BC654DFC41B'
 
-    def sign_request(self, page, params):
+    # just current time in seconds since epoch
+    salt = str(int(time.time()))
 
-        key = "EF64523D2BD1FA21F18F5BC654DFC41B"
+    # the message is essentially the
+    # request with parameters sorted
+    msg = '/api/' + page
+    sortedParams = params.keys()
+    sortedParams.sort()
 
-        # The salt is just the current time in seconds since epoch
-        salt = str(int(time.time()))
+    if len(params) > 0:
+      msg += '?'
 
-        # The message to be signed is essentially the request, with parameters sorted
-        msg = "/api/" + page
-        sorted_params = params.keys()
-        sorted_params.sort()
-        if len(params) > 0:
-            msg += "?"
-        for param in sorted_params:
-            msg += "%s=%s&" % (param, params[param])
+    for param in sortedParams:
+      msg += '%s=%s&' % (param, params[param])
 
-        # Chop off last "&"
-        if len(params) > 0:
-            msg = msg[:-1]
+    # chop off last ampersand
+    if len(params) > 0:
+      msg = msg[:-1]
 
-        # The salt is just appended directly
-        msg += salt
+    # append salt directly
+    msg += salt
 
-        # Calculate the signature
-        h = hmac.new(key, msg, sha1)
-        hash = base64.b64encode(h.digest())
+    # Calculate the signature
+    h = hmac.new(key, msg, sha1)
+    hash = base64.b64encode(h.digest())
+    return hash, salt, msg
 
-        return hash, salt, msg
+  def get(self, page, params):
+    url = self.baseURL + page
+    params['version'] = '2.1.001'
 
-    def get(self, page, params):
-        url = self.base_url + page
+    hash, salt, msg = self.signRequest(page, params)
+    params['salt'] = salt
+    params['hash'] = hash
 
-        params['version'] = "2.1.001"
-        hash, salt, msg = self.sign_request(page, params)
-        params['salt'] = salt
-        params['hash'] = hash
+    headers = {
+      'User-Agent': self.userAgent,
+      'Accept-Encoding': 'gzip',
+    }
 
+    ret = requests.get(url, params = params, headers = headers)
+    return ret # TODO: do we need a cookie here?
 
-        headers = {
-            "User-Agent": self.user_agent,
-            "Accept-Encoding": "gzip",
-        }
+  def post(self, page, params):
+    url = self.baseURL + page
 
-        if self.cookie is not None:
-            headers["Cookie"] = self.cookie
-        ret = requests.get(url, params=params, headers=headers)
-        if self.cookie is None:
-            self.cookie = ret.headers["Set-Cookie"].split(';')[0]
-        return ret
+    getParams = { 'userID': self.ID, 'version': '2.1.001' }
+    hash, salt, msg = self.signRequest(page, getParams)
+    getParams['salt'] = salt
+    getParams['hash'] = hash
 
-    def post(self, page, params):
-        url = self.base_url + page
+    headers = {
+      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'User-Agent': self.userAgent,
+      'Accept-Encoding': 'gzip'
+      # 'Cookie': self.cookie
+    }
 
-        getparams = { 'userID': self.id, "version": "2.1.001" }
-        hash, salt, msg = self.sign_request(page, getparams)
-        getparams['salt'] = salt
-        getparams['hash'] = hash
+    data = ''
+    sortedParams = params.keys()
+    sortedParams.sort()
 
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "User-Agent": self.user_agent,
-            "Accept-Encoding": "gzip",
-            "Cookie": self.cookie
-        }
-        data = ""
-        sorted_params = params.keys()
-        sorted_params.sort()
-        for param in sorted_params:
-            data += "%s=%s&" % (param, params[param])
-        ret = requests.post(url, data=data, params=getparams, headers=headers)
-        return ret
+    for param in sortedParams:
+      data += '%s=%s&' % (param, params[param])
+      ret = requests.post(url, data = data, params = getParams, headers = headers)
 
-    def calc_accuracy(self): #needed in 2.6.3
-        return format(Decimal(randrange(10000))/1000 % 30 + 20, ".3f")
+    # does not work
+    return ret
 
-    def get_yak_list(self, page, params):
-        return self.parse_yaks(self.get(page, params).text)
+  def calcAccuracy(self): # needed in 2.6.3
+    return format(Decimal(randrange(10000))/1000 % 30 + 20, '.3f')
 
-    def parse_yaks(self, text):
-        try:
-            raw_yaks = json.loads(text)["messages"]
-        except:
-            raw_yaks = []
-        yaks = []
-        for raw_yak in raw_yaks:
-            yaks.append(Yak(raw_yak, self))
-        return yaks
+  def getYakList(self, page, params):
+    return self.parseYaks(self.get(page, params).text)
 
-    def parse_comments(self, text, message_id):
-        try:
-            raw_comments = json.loads(text)["comments"]
-        except:
-            raw_comments = []
-        comments = []
-        for raw_comment in raw_comments:
-            comments.append(Comment(raw_comment, message_id, self))
-        return comments
+  def parseYaks(self, text):
+    try: rawYaks = json.loads(text)['messages']
+    except: rawYaks = []
 
-    def contact(self, message):
-        params = {
-            "userID": self.id,
-            "message": message
-        }
-        return self.get("contactUs", params)
+    yaks = []
+    for rawYak in rawYaks:
+      yaks.append(Yak(rawYak, self))
+    return yaks
 
-    def upvote_yak(self, message_id):
-        params = {
-            "userID": self.id,
-            "messageID": message_id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get("likeMessage", params)
+  def parseComments(self, text, messageID):
+    try: rawComments = json.loads(text)['comments']
+    except: rawComments = []
 
-    def downvote_yak(self, message_id):
-        params = {
-            "userID": self.id,
-            "messageID": message_id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get("downvoteMessage", params)
+    comments = []
+    for rawComment in rawComments:
+      comments.append(Comment(rawComment, messageID, self))
+    return comments
 
-    def upvote_comment(self, comment_id):
-        params = {
-            "userID": self.id,
-            "commentID": comment_id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get("likeComment", params)
+  def contact(self, message):
+    params = {
+      'userID': self.ID,
+      'message': message
+    }
 
-    def downvote_comment(self, comment_id):
-        params = {
-            "userID": self.id,
-            "commentID": comment_id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get("downvoteComment", params)
+    # just for completeness
+    return self.get('contactUs', params)
 
-    def report_yak(self, message_id):
-        params = params = {
-            "userID": self.id,
-            "messageID": message_id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get("reportMessage", params)
+  def upvoteYak(self, messageID):
+    params = {
+      'userID': self.ID,
+      'messageID': messageID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
 
-    def delete_yak(self, message_id):
-        params = params = {
-            "userID": self.id,
-            "messageID": message_id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get("deleteMessage2", params)
+    # like = upvote on Yak
+    return self.get('likeMessage', params)
 
-    def report_comment(self, comment_id, message_id):
-        params = {
-            "userID": self.id,
-            "commentID": comment_id,
-            "messageID": message_id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get("reportMessage", params)
+  def downvoteYak(self, messageID):
+    params = {
+        'userID': self.ID,
+        'messageID': messageID,
+        'lat': self.location.latitude,
+        'long': self.location.longitude,
+    }
 
-    def delete_comment(self, comment_id, message_id):
-        params = {
-            "userID": self.id,
-            "commentID": comment_id,
-            "messageID": message_id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get("deleteComment", params)
+    # opposite of a downvote is a ... like?
+    return self.get('downvoteMessage', params)
 
-    def get_greatest(self):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get_yak_list("getGreatest", params)
+  def upvoteComment(self, commentID):
+    params = {
+      'userID': self.ID,
+      'commentID': commentID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
 
-    def get_my_tops(self):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get_yak_list("getMyTops", params)
+    # like = upvote on comment
+    return self.get('likeComment', params)
 
-    def get_recent_replied(self):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get_yak_list("getMyRecentReplies", params)
+  def downvoteComment(self, commentID):
+    params = {
+      'userID': self.ID,
+      'commentID': commentID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
 
-    def update_location(self, location):
-        self.location = location
+    # opposite of a downvote is a ... like?
+    return self.get('downvoteComment', params)
 
-    def get_my_recent_yaks(self):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get_yak_list("getMyRecentYaks", params)
+  def reportYak(self, messageID):
+    params = {
+      'userID': self.ID,
+      'messageID': messageID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
 
-    def get_area_tops(self):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get_yak_list("getAreaTops", params)
+    # report Yak endpoint
+    return self.get('reportMessage', params)
 
-    def get_yaks(self):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.get_yak_list("getMessages", params)
+  def deleteYak(self, messageID):
+    params = {
+      'userID': self.ID,
+      'messageID': messageID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
 
-    def post_yak(self, message, showloc=False, handle=False):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-            "message": message.replace(" ", "+"),
-        }
-        if not showloc:
-            params["hidePin"] = "1"
-        if handle and (self.handle is not None):
-            params["hndl"] = self.handle
-        return self.post("sendMessage", params)
+    # delete Yak endpoint
+    return self.get('deleteMessage2', params)
 
-    def get_comments(self, message_id):
-        params = {
-            "userID": self.id,
-            "messageID": message_id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
+  def reportComment(self, commentID, messageID):
+    params = {
+      'userID': self.ID,
+      'commentID': commentID,
+      'messageID': messageID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
 
-        return self.parse_comments(self.get("getComments", params).text, message_id)
+    # report comment endpoint
+    return self.get('reportMessage', params)
 
-    def post_comment(self, message_id, comment):
-        params = {
-            "userID": self.id,
-            "messageID": message_id,
-            "comment": comment,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        return self.post("postComment", params)
+  def deleteComment(self, commentID, messageID):
+    params = {
+      'userID': self.ID,
+      'commentID': commentID,
+      'messageID': messageID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
 
-    def get_peek_locations(self):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        data = self.get("getMessages", params).json()
-        peeks = []
-        for peek_json in data['otherLocations']:
-            peeks.append(PeekLocation(peek_json))
-        return peeks
+    # delete comment endpoint
+    return self.get('deleteComment', params)
 
-    def get_featured_locations(self):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        data = self.get("getMessages", params).json()
-        peeks = []
-        for peek_json in data['featuredLocations']:
-            peeks.append(PeekLocation(peek_json))
-        return peeks
+  def getGreatest(self):
+    params = {
+      'userID': self.ID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
 
-    def get_yakarma(self):
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-        }
-        data = self.get("getMessages", params).json()
-        return int(data['yakarma'])
+    # all time tops endpoint
+    return self.getYakList('getGreatest', params)
 
-    def peek(self, peek_id):
-        if isinstance(peek_id, PeekLocation):
-            peek_id = peek_id.id
+  def getMyTops(self):
+    params = {
+        'userID': self.ID,
+        'lat': self.location.latitude,
+        'long': self.location.longitude,
+    }
 
-        params = {
-            "userID": self.id,
-            "lat": self.location.latitude,
-            "long": self.location.longitude,
-            'peekID': peek_id,
-        }
-        return self.get_yak_list("getPeekMessages", params)
+    # get my tops endpoint
+    return self.getYakList('getMyTops', params)
 
+  def getRecentReplied(self):
+    params = {
+        'userID': self.ID,
+        'lat': self.location.latitude,
+        'long': self.location.longitude,
+    }
+
+    # get recent replies endpoint
+    return self.getYakList('getMyRecentReplies', params)
+
+  # make sure location is Location object
+  def updateLocation(self, location):
+    self.location = location
+
+  def getMyRecentYaks(self):
+    params = {
+      'userID': self.ID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
+
+    # get recent yaks endpoint
+    return self.getYakList('getMyRecentYaks', params)
+
+  def getAreaTops(self):
+    params = {
+      'userID': self.ID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
+
+    # best in area endpoint
+    return self.getYakList('getAreaTops', params)
+
+  def getYaks(self):
+    params = {
+      'userID': self.ID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
+
+    # get list of yaks by location
+    return self.getYakList('getMessages', params)
+
+  # probably does not work because of cookie issues
+  def postYak(self, message, showloc = False, handle = False):
+    params = {
+      'userID': self.ID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+      'message': message.replace(' ', '+')
+    }
+
+    if not showloc: params['hidePin'] = '1'
+    if handle and (self.handle is not None):
+      params['hndl'] = self.handle
+    return self.post('sendMessage', params)
+
+  def getComments(self, messageID):
+    params = {
+      'userID': self.ID,
+      'messageID': messageID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
+
+    # get post comments endpoint [we also parse here]
+    return self.parseComments(self.get('getComments', params).text, messageID)
+
+  def postComment(self, messageID, comment):
+    params = {
+      'userID': self.ID,
+      'messageID': messageID,
+      'comment': comment,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
+
+    # post comment endpoint
+    return self.post('postComment', params)
+
+  def getPeekLocations(self):
+    params = {
+      'userID': self.ID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
+
+    # get peek locations [list of places]
+    # TODO: why is this getMessages?
+    data = self.get('getMessages', params).json()
+
+    peeks = []
+    for peekJSON in data['otherLocations']:
+      peeks.append(PeekLocation(peekJSON))
+    return peeks
+
+  def getFeaturedLocations(self):
+    params = {
+      'userID': self.ID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
+
+    # get promoted locations [list of places]
+    # TODO: why is this getMessages?
+    data = self.get('getMessages', params).json()
+
+    peeks = []
+    for peekJSON in data['featuredLocations']:
+      peeks.append(PeekLocation(peekJSON))
+    return peeks
+
+  def getYakarma(self):
+    params = {
+      'userID': self.ID,
+      'lat': self.location.latitude,
+      'long': self.location.longitude,
+    }
+
+    # TODO: why is this getMessages?
+    data = self.get('getMessages', params).json()
+    return int(data['yakarma'])
+
+  def peek(self, peekID):
+    if isinstance(peekID, PeekLocation):
+      peekID = peekID.ID
+
+      params = {
+        'userID': self.ID,
+        'lat': self.location.latitude,
+        'long': self.location.longitude,
+        'peekID': peekID,
+      }
+
+    # peek locations endpoint
+    return self.getYakList('getPeekMessages', params)
