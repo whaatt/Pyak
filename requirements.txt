@@ -1,2 +1,2 @@
-requests==2.7.0
-virtualenv==13.1.2
+peewee==2.6.4
+requests==2.8.0

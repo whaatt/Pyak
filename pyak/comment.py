@@ -1,10 +1,10 @@
 # File: comment.py
 # Yak Comment Model
 
-import time
+from datetime import datetime
 def parseTime(timeStr):
   format = '%Y-%m-%d %H:%M:%S'
-  return time.mktime(time.strptime(timeStr, format))
+  return datetime.strptime(timeStr, format)
 
 class Comment:
   def __init__(self, raw, messageID, client):

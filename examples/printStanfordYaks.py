@@ -9,6 +9,5 @@ yakker.updateLocation(stanford)
 yaks = yakker.getYaks()
 
 # print out the yaks in ascending order of likes
-for yak in sorted(yaks, key = lambda x: x.likes):
-  print yak.message.encode('utf-8'), yak.messageID
-  if yak.comments > 0: print yak.getComments()
+for yak in sorted(yaks, key = lambda x: x.time):
+  print yak.message.encode('utf-8'), yak.time

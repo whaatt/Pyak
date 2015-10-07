@@ -56,3 +56,6 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Project DB
+project/yak.db

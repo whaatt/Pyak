@@ -1,30 +1,30 @@
 # File: yak.py
 # Yak Message Model
 
-import time
+from datetime import datetime
 def parseTime(timeStr):
   format = '%Y-%m-%d %H:%M:%S'
-  return time.mktime(time.strptime(timeStr, format))
+  return datetime.strptime(timeStr, format)
 
 class Yak:
   def __init__(self, raw, client):
     self.client = client
-    self.posterID = raw["posterID"]
-    self.hidePin = bool(int(raw["hidePin"]))
-    self.messageID = raw["messageID"]
-    self.deliveryID = raw["deliveryID"]
-    self.longitude = raw["longitude"]
-    self.comments = int(raw["comments"])
-    self.time = parseTime(raw["time"])
-    self.latitude = raw["latitude"]
-    self.likes = int(raw["numberOfLikes"])
-    self.message = raw["message"]
-    self.type = raw["type"]
-    self.liked = int(raw["liked"])
-    self.reyaked = raw["reyaked"]
+    self.posterID = raw['posterID']
+    self.hidePin = bool(int(raw['hidePin']))
+    self.messageID = raw['messageID']
+    self.deliveryID = raw['deliveryID']
+    self.longitude = raw['longitude']
+    self.comments = int(raw['comments'])
+    self.time = parseTime(raw['time'])
+    self.latitude = raw['latitude']
+    self.likes = int(raw['numberOfLikes'])
+    self.message = raw['message']
+    self.type = raw['type']
+    self.liked = int(raw['liked'])
+    self.reyaked = raw['reyaked']
 
     # yaks do not always have a handle
-    try: self.handle = raw["handle"]
+    try: self.handle = raw['handle']
     except KeyError: self.handle = None
 
     # for some reason this seems necessary
