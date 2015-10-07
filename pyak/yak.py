@@ -30,31 +30,31 @@ class Yak:
     # for some reason this seems necessary
     self.messageID = self.messageID.replace('\\', '')
 
-    def upvote(self):
-      if self.liked == 0:
-        self.liked += 1
-        self.likes += 1
+  def upvote(self):
+    if self.liked == 0:
+      self.liked += 1
+      self.likes += 1
 
-        # only triggers if not already voted on
-        return self.client.upvoteYak(self.messageID)
+      # only triggers if not already voted on
+      return self.client.upvoteYak(self.messageID)
 
-    def downvote(self):
-      if self.liked == 0:
-        self.liked -= 1
-        self.likes -= 1
+  def downvote(self):
+    if self.liked == 0:
+      self.liked -= 1
+      self.likes -= 1
 
-        # only triggers if not already voted on
-        return self.client.downvoteYak(self.messageID)
+      # only triggers if not already voted on
+      return self.client.downvoteYak(self.messageID)
 
-    def report(self):
-      return self.client.reportYak(self.messageID)
+  def report(self):
+    return self.client.reportYak(self.messageID)
 
-    def delete(self):
-      if self.posterID == self.client.ID:
-        return self.client.deleteYak(self.messageID)
+  def delete(self):
+    if self.posterID == self.client.ID:
+      return self.client.deleteYak(self.messageID)
 
-    def addComment(self, comment):
-      return self.client.postComment(self.messageID, comment)
+  def addComment(self, comment):
+    return self.client.postComment(self.messageID, comment)
 
-    def getComments(self):
-      return self.client.getComments(self.messageID)
+  def getComments(self):
+    return self.client.getComments(self.messageID)
