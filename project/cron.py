@@ -6,6 +6,9 @@ from time import time, strftime
 from pyak import *
 import models
 
+# to avoid crashing if getYaks or getComments fails
+from requests.exceptions import ConnectTimeout
+
 # introductory message for log output
 print('Beginning cron processing job.')
 print('This should run every 5 minutes.\n')
@@ -42,10 +45,16 @@ for school in schools:
   
   schoolLocation = Location(schoolData['latitude'], schoolData['longitude'])
   yakker.updateLocation(schoolLocation)
-  yaks = yakker.getYaks()
+  print('School: ' + schoolData['name'])
+
+  try: yaks = yakker.getYaks()
+  except ConnectTimeout as e:
+    print('Connection to Yik Yak failed.')
+    continue # limit the damage
 
   yakCount = 0
   commentCount = 0
+  commentFail = False
 
   for yak in yaks:
     yakDict = models.convertYakToDict(yak, schoolEntry)
@@ -53,16 +62,21 @@ for school in schools:
     yakCount += 1
 
     if (yak.comments > 0):
-      comments = yak.getComments()
+      try: comments = yak.getComments()
+      except ConnectTimeout as e:
+        commentFail = True # errored
+        continue # limit the damage
+
+      # connection worked
       for comment in comments:
         commentDict = models.convertCommentToDict(comment, yak.messageID)
         models.processCommentDict(commentDict, datetime.now())
         commentCount += 1
 
-  print('School: ' + schoolData['name'])
+  if commentFail: print('Comment failures occurred.')
   print('Processed ' + str(yakCount) + ' yaks.')
   print('Processed ' + str(commentCount) + ' comments.\n')
 
 print('Finished processing all schools.')
 print('Ran in about ' + str(round(time() - start, 2)) + ' seconds.')
-print('It is ' + strftime("%Y-%m-%d %H:%M:%S") + '.')
+print('It is ' + strftime("%Y-%m-%d %H:%M:%S") + '.\n')
