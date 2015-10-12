@@ -8,7 +8,7 @@ import models
 
 # introductory message for log output
 print('Beginning cron processing job.')
-print('This should run every 10 minutes.\n')
+print('This should run every 5 minutes.\n')
 
 # start the clock
 start = time()
