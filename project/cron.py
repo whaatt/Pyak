@@ -2,7 +2,7 @@
 # Project Cron Job
 
 from datetime import datetime
-from time import time
+from time import time, strftime
 from pyak import *
 import models
 
