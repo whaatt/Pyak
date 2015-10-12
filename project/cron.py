@@ -6,6 +6,10 @@ from time import time
 from pyak import *
 import models
 
+# introductory message for log output
+print('Beginning cron processing job.')
+print('This should run every 10 minutes.\n')
+
 # start the clock
 start = time()
 
@@ -61,3 +65,4 @@ for school in schools:
 
 print('Finished processing all schools.')
 print('Ran in about ' + str(round(time() - start, 2)) + ' seconds.')
+print('It is ' + strftime("%Y-%m-%d %H:%M:%S") + '.')
