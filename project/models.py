@@ -27,6 +27,7 @@ class Yak(BaseModel):
   time = DateTimeField() # takes datetime objects
   school = ForeignKeyField(School, related_name = 'yaks')
   originalID = CharField(max_length = 63, unique = True)
+  isSpecial = BooleanField() # true if official message
 
 class YakLikeCount(BaseModel):
   count = IntegerField()
@@ -64,7 +65,8 @@ def convertYakToDict(yak, school):
   yakDict['finalCommentCount'] = yak.comments
   yakDict['time'] = yak.time # datetime object
   yakDict['school'] = school # should be valid
-  yakDict['originalID'] = yak.messageID
+  yakDict['originalID'] = yak.messageID # unique
+  yakDict['isSpecial'] = yak.messageID[0] != 'R'
 
   # for processing
   return yakDict

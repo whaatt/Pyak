@@ -35,7 +35,7 @@ schools = [(stanford, stanData), (alabama, bamaData), (berkeley, berkData), (dar
   (haverford, haveData), (boulder, bldrData), (oxford, oxfdData)] # and maybe more later
 
 # ideally do not change ID to keep this project on the DL
-yakker = Yakker(userID = '41DE433C316716518DFDA05B94322485')
+yakker = Yakker(userID = 'BCE99601F86F8E5E0A7DF7867180D4D0')
 
 # TODO: maybe make some schools
 # not process on every cron run
