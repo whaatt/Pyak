@@ -82,7 +82,7 @@ class Yakker:
 
   def get(self, page, params):
     url = self.baseURL + page
-    params['version'] = '2.1.001'
+    params['version'] = '2.10.2'
 
     hash, salt, msg = self.signRequest(page, params)
     params['salt'] = salt
@@ -99,7 +99,7 @@ class Yakker:
   def post(self, page, params):
     url = self.baseURL + page
 
-    getParams = { 'userID': self.ID, 'version': '2.1.001' }
+    getParams = { 'userID': self.ID, 'version': '2.10.2' }
     hash, salt, msg = self.signRequest(page, getParams)
     getParams['salt'] = salt
     getParams['hash'] = hash
