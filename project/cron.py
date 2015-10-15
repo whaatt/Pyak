@@ -6,8 +6,8 @@ from time import time, strftime
 from pyak import *
 import models
 
-# to avoid crashing if getYaks or getComments fails
-from requests.exceptions import ConnectTimeout
+# to avoid crashing cron if getYaks or getComments fails
+from requests.exceptions import ConnectTimeout, SSLError
 
 # introductory message for log output
 print('Beginning cron processing job.')
@@ -50,6 +50,10 @@ for school in schools:
   try: yaks = yakker.getYaks()
   except ConnectTimeout as e:
     print('Connection to Yik Yak failed.')
+    continue # limit the damage
+  except SSLError as e:
+    # this error is a little troubling
+    print('A strange SSL error occurred.')
     continue # limit the damage
 
   yakCount = 0
