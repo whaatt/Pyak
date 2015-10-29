@@ -49,14 +49,14 @@ for school in schools:
 
   try: yaks = yakker.getYaks()
   except ConnectTimeout as e:
-    print('Connection to Yik Yak failed.')
+    print('Connection to Yik Yak failed.\n')
     continue # limit the damage
   except ConnectionError as e:
-    print('Connection to Yik Yak failed.')
+    print('Connection to Yik Yak failed.\n')
     continue # limit the damage
   except SSLError as e:
     # this error is a little troubling
-    print('A strange SSL error occurred.')
+    print('A strange SSL error occurred.\n')
     continue # limit the damage
 
   yakCount = 0
