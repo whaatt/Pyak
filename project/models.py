@@ -29,6 +29,13 @@ class Yak(BaseModel):
   originalID = CharField(max_length = 63, unique = True)
   isSpecial = BooleanField() # true if official message
 
+  # added in migration for data analysis and coding
+  # refer to the study codebook for a detailed key
+  voice = IntegerField(default = 0) # 0 is unknown
+  relevance = IntegerField(default = 0) # 0 is unknown
+  theme = IntegerField(default = 0) # 0 is unknown
+  isCoded = BooleanField(default = False)
+
 class YakLikeCount(BaseModel):
   count = IntegerField()
   time = DateTimeField()
@@ -47,6 +54,11 @@ class Comment(BaseModel):
   time = DateTimeField() # takes datetime objects
   yak = ForeignKeyField(Yak, related_name = 'comments')
   originalID = CharField(max_length = 63, unique = True)
+
+  # added in migration for data analysis and coding
+  # refer to the study codebook for a detailed key
+  disposition = IntegerField(default = 0)
+  isCoded = BooleanField(default = False)
 
 class CommentLikeCount(BaseModel):
   count = IntegerField()
