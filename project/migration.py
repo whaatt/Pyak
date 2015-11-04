@@ -20,10 +20,17 @@ codedYak = BooleanField(default = False)
 disposition = IntegerField(default = 0)
 codedComment = BooleanField(default = False)
 
+# playing around with automated sentiment analysis
+# field = 1 is negative and field = 2 is positive
+sentimentYak = IntegerField(default = 0) # 0 is unknown
+sentimentComment = IntegerField(default = 0) # 0 is unknown
+
 with DB.transaction(): # transaction just for safety
   migrate(migrator.add_column('yak', 'voice', voice),
           migrator.add_column('yak', 'theme', theme),
           migrator.add_column('yak', 'relevance', relevance),
           migrator.add_column('yak', 'isCoded', codedYak),
+          migrator.add_column('yak', 'sentiment', sentimentYak),
           migrator.add_column('comment', 'disposition', disposition),
-          migrator.add_column('comment', 'isCoded', codedComment))
+          migrator.add_column('comment', 'isCoded', codedComment),
+          migrator.add_column('comment', 'sentiment', sentimentComment))

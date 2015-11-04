@@ -36,6 +36,10 @@ class Yak(BaseModel):
   theme = IntegerField(default = 0) # 0 is unknown
   isCoded = BooleanField(default = False)
 
+  # playing around with automated sentiment analysis
+  # field = 1 is negative and field = 2 is positive
+  sentiment = IntegerField(default = 0) # 0 is unknown
+
 class YakLikeCount(BaseModel):
   count = IntegerField()
   time = DateTimeField()
@@ -59,6 +63,10 @@ class Comment(BaseModel):
   # refer to the study codebook for a detailed key
   disposition = IntegerField(default = 0)
   isCoded = BooleanField(default = False)
+
+  # playing around with automated sentiment analysis
+  # field = 1 is negative and field = 2 is positive
+  sentiment = IntegerField(default = 0) # 0 is unknown
 
 class CommentLikeCount(BaseModel):
   count = IntegerField()
