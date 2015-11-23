@@ -1,2 +1,6 @@
+nltk==3.0.4
+nltk-trainer==0.9
+numpy==1.9.2
 peewee==2.6.4
 requests==2.8.0
+textblob==0.11.0

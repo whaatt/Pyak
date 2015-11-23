@@ -5,7 +5,7 @@ from peewee import *
 import datetime
 
 # use threadlocals option just for added safety
-DB = SqliteDatabase('yak.db', threadlocals = True)
+DB = SqliteDatabase('data/final.db', threadlocals = True)
 DB.connect() # explicit to show any errors
 
 # suggested by peewee
@@ -37,8 +37,8 @@ class Yak(BaseModel):
   isCoded = BooleanField(default = False)
 
   # playing around with automated sentiment analysis
-  # field = 1 is negative and field = 2 is positive
-  sentiment = IntegerField(default = 0) # 0 is unknown
+  polarity = DoubleField(default = 0) # range: -1 to 1
+  subjectivity = DoubleField(default = 0) # range: 0 to 1
 
 class YakLikeCount(BaseModel):
   count = IntegerField()
@@ -65,8 +65,8 @@ class Comment(BaseModel):
   isCoded = BooleanField(default = False)
 
   # playing around with automated sentiment analysis
-  # field = 1 is negative and field = 2 is positive
-  sentiment = IntegerField(default = 0) # 0 is unknown
+  polarity = DoubleField(default = 0) # range: -1 to 1
+  subjectivity = DoubleField(default = 0) # range: 0 to 1
 
 class CommentLikeCount(BaseModel):
   count = IntegerField()

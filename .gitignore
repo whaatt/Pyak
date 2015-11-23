@@ -59,5 +59,4 @@ target/
 
 # Project DB
 project/yak.db
-project/data/scrape.db
-project/data/scrape.log
+project/data/
